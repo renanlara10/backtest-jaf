@@ -73,6 +73,7 @@ tr.detail-row:hover{filter:brightness(1.1)}
       <input class="param-input" id="inputPerc" value="10" style="border:1px solid rgba(56,189,248,.5);color:var(--sky)" onkeydown="if(event.key==='Enter')applyPerc()">
       <button class="param-btn" style="background:rgba(56,189,248,.15);color:var(--sky);border:1px solid rgba(56,189,248,.3)" onclick="applyPerc()">▶ APLICAR</button>
       <div class="param-note">profit = max(lostAccum × <strong id="percLabel" style="color:var(--sky)">10%</strong>, lucroAlvo)</div>
+      <div class="param-note" style="margin-top:3px;color:var(--muted);font-size:8px">aceita de 0,01% a 999% — ex: 5, 2.5, 0.5</div>
     </div>
     <!-- card bomba -->
     <div class="param-card" id="bombCard" style="border:1px solid var(--border);transition:border .2s">
@@ -2483,7 +2484,21 @@ function render(){
 // ── Controles ──
 function applyL(){const v=parseFloat(document.getElementById("inputL").value.replace(",","."));if(!isNaN(v)&&v>=1){lucroAlvo=r2(v);hist=runBacktest();render();}}
 function applyO(){const v=parseFloat(document.getElementById("inputO").value.replace(",","."));if(!isNaN(v)&&v>=1.1){oddMedia=r2(v);hist=runBacktest();render();}}
-function applyPerc(){const v=parseFloat(document.getElementById("inputPerc").value.replace(",","."));if(!isNaN(v)&&v>0&&v<=100){percRecup=r2(v);hist=runBacktest();render();}}
+function applyPerc(){
+  const inp = document.getElementById("inputPerc");
+  const v = parseFloat(inp.value.replace(",","."));
+  if(!isNaN(v) && v >= 0.01 && v <= 999) {
+    percRecup = Math.round(v * 100) / 100;
+    inp.style.borderColor = "rgba(56,189,248,.8)";
+    hist = runBacktest();
+    render();
+    setTimeout(()=>{ inp.style.borderColor = "rgba(56,189,248,.5)"; }, 800);
+  } else {
+    inp.style.borderColor = "#ff4d6d";
+    inp.style.color = "#ff4d6d";
+    setTimeout(()=>{ inp.style.borderColor = "rgba(56,189,248,.5)"; inp.style.color = "var(--sky)"; }, 1200);
+  }
+}
 function applyLim(){const v=parseFloat(document.getElementById("inputLim").value.replace(",","."));if(!isNaN(v)&&v>=1){limiteRedist=r2(v);hist=runBacktest();render();}}
 
 function toggleRedist(){
