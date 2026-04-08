@@ -14587,7 +14587,7 @@ function calcBet(stage, lostAccum, odd, lucroAlvo, redistExtra=0, percRecup=10) 
     return { aposta, lucro: r2(aposta * (odd - 1)) };
   }
   const profit = Math.max(r2(lostAccum * (percRecup / 100)), r2(lucroAlvo + redistExtra));
-  return { aposta: r2((lostAccum + profit) / odd), lucro: r2(profit) };
+  return { aposta: r2((lostAccum + profit) / (odd - 1)), lucro: r2(profit) };
 }
 
 function runBacktest() {
