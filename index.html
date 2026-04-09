@@ -86,6 +86,9 @@ tr.detail-row:hover{filter:brightness(1.1)}
       <div class="param-note" style="margin-bottom:5px">Limite lostAccum (R$):</div>
       <input class="param-input" id="inputLim" value="500" disabled style="border:1px solid var(--border);color:var(--muted);font-size:19px" onkeydown="if(event.key==='Enter')applyLim()">
       <button class="param-btn" id="bombBtn" disabled style="background:rgba(74,90,112,.1);color:var(--muted);border:1px solid var(--border);cursor:not-allowed" onclick="applyLim()">▶ APLICAR</button>
+      <div class="param-note" style="margin-bottom:5px;margin-top:8px">% redistribuído da bomba:</div>
+      <input class="param-input" id="inputPercRedist" value="50" disabled style="border:1px solid var(--border);color:var(--muted);font-size:19px" onkeydown="if(event.key==='Enter')applyPercRedist()">
+      <button class="param-btn" id="btnPercRedist" disabled onclick="applyPercRedist()" style="background:rgba(74,90,112,.1);color:var(--muted);border:1px solid var(--border);cursor:not-allowed">▶ APLICAR</button>
       <div class="param-note" id="redistNote"><strong style="color:var(--muted)">DESATIVADO</strong></div>
     </div>
   </div>
@@ -142,7 +145,7 @@ tr.detail-row:hover{filter:brightness(1.1)}
   </div>
 
   <div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--bomb);padding:9px 13px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);line-height:1.8">
-    <strong style="color:var(--bomb)">💣 Linha Bomba:</strong> Se ativo e lostAccum &gt; limite → a linha com maior saldo negativo tem 50% redistribuído como lucro alvo extra para as outras 13.&nbsp;
+    <strong style="color:var(--bomb)">💣 Linha Bomba:</strong> Se ativo e lostAccum &gt; limite → a linha com maior saldo negativo tem X% redistribuído (conforme parâmetro) como lucro alvo extra para as outras 13.&nbsp;
     <strong style="color:var(--accent)">Filtros de ano</strong> na tabela não afetam o cálculo — o martingale é contínuo entre todos os concursos.
   </div>
 </div>
@@ -14572,7 +14575,7 @@ const JOGOS_RAW = [
 ];
 
 // ── Estado global ──
-let lucroAlvo = 20, oddMedia = 3.0, redistAtivo = false, limiteRedist = 500, percRecup = 10;
+let lucroAlvo = 20, oddMedia = 3.0, redistAtivo = false, limiteRedist = 500, percRecup = 10, percRedist = 50;
 let hist = [], histFiltrado = [], sel = 0, anoFiltro = "todos";
 
 const r2 = v => Math.round(v * 100) / 100;
@@ -14590,7 +14593,7 @@ function calcBet(stage, lostAccum, odd, lucroAlvo, redistExtra=0, percRecup=10) 
   return { aposta: r2((lostAccum + profit) / (odd - 1)), lucro: r2(profit) };
 }
 
-function runBacktest() {
+function runBacktest() { // usa percRedist global
   const concMap = {};
   for (const row of JOGOS_RAW) {
     if (!concMap[row[0]]) concMap[row[0]] = [];
@@ -14607,7 +14610,7 @@ function runBacktest() {
       lines.forEach((ln,i)=>{ if(ln.lostAccum>maxLost){maxLost=ln.lostAccum;idxBomba=i;} });
       if (maxLost > limiteRedist && idxBomba >= 0) {
         const debito = lines[idxBomba].lostAccum;
-        const metade = r2(debito*0.5);
+        const metade = r2(debito*(percRedist/100));
         const extra = r2(metade/13);
         lines.forEach((l,j)=>{ if(j!==idxBomba) l.redistExtra=r2((l.redistExtra||0)+extra); });
         lines[idxBomba].lostAccum = metade;
@@ -14848,6 +14851,7 @@ function applyPerc(){
   }
 }
 function applyLim(){const v=parseFloat(document.getElementById("inputLim").value.replace(",","."));if(!isNaN(v)&&v>=1){limiteRedist=r2(v);hist=runBacktest();render();}}
+function applyPercRedist(){const inp=document.getElementById("inputPercRedist");const v=parseFloat(inp.value.replace(",","."));if(!isNaN(v)&&v>0&&v<=100){percRedist=Math.round(v*100)/100;inp.style.borderColor="rgba(192,132,252,.8)";hist=runBacktest();render();setTimeout(()=>{inp.style.borderColor="rgba(192,132,252,.5)";},800);}else{inp.style.borderColor="#ff4d6d";setTimeout(()=>{inp.style.borderColor="rgba(192,132,252,.5)";},1200);}}
 
 function toggleRedist(){
   redistAtivo=!redistAtivo;
@@ -14863,6 +14867,10 @@ function toggleRedist(){
     bc.style.borderColor="rgba(192,132,252,.45)";
     btn.disabled=false; btn.style.background="rgba(192,132,252,.15)"; btn.style.color="var(--bomb)"; btn.style.borderColor="rgba(192,132,252,.3)"; btn.style.cursor="pointer";
     lim.disabled=false; lim.style.borderColor="rgba(192,132,252,.5)"; lim.style.color="var(--bomb)";
+    const pr=document.getElementById("inputPercRedist");
+    pr.disabled=false; pr.style.borderColor="rgba(192,132,252,.5)"; pr.style.color="var(--bomb)";
+    const bpr=document.getElementById("btnPercRedist");
+    bpr.disabled=false; bpr.style.background="rgba(192,132,252,.15)"; bpr.style.color="var(--bomb)"; bpr.style.borderColor="rgba(192,132,252,.3)"; bpr.style.cursor="pointer";
     note.innerHTML=`<strong style="color:var(--bomb)">ATIVO</strong>`;
   } else {
     tw.style.background="rgba(74,90,112,.3)"; tw.style.borderColor="var(--border)";
@@ -14870,6 +14878,10 @@ function toggleRedist(){
     bc.style.borderColor="var(--border)";
     btn.disabled=true; btn.style.background="rgba(74,90,112,.1)"; btn.style.color="var(--muted)"; btn.style.borderColor="var(--border)"; btn.style.cursor="not-allowed";
     lim.disabled=true; lim.style.borderColor="var(--border)"; lim.style.color="var(--muted)";
+    const pr2=document.getElementById("inputPercRedist");
+    pr2.disabled=true; pr2.style.borderColor="var(--border)"; pr2.style.color="var(--muted)";
+    const bpr2=document.getElementById("btnPercRedist");
+    bpr2.disabled=true; bpr2.style.background="rgba(74,90,112,.1)"; bpr2.style.color="var(--muted)"; bpr2.style.borderColor="var(--border)"; bpr2.style.cursor="not-allowed";
     note.innerHTML=`<strong style="color:var(--muted)">DESATIVADO</strong>`;
   }
   hist=runBacktest(); render();
